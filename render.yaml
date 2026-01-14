@@ -1,0 +1,47 @@
+# Render Blueprint for PriceSpy
+# https://render.com/docs/blueprint-spec
+
+services:
+  # Main web service
+  - type: web
+    name: pricespy
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: SERPAPI_KEY
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: FROM_EMAIL
+        value: onboarding@resend.dev
+      - key: DATABASE_PATH
+        value: /data/pricespy.db
+    disk:
+      name: pricespy-data
+      mountPath: /data
+      sizeGB: 1
+    healthCheckPath: /health
+    plan: free
+
+  # Cron job for scheduled scraping
+  - type: cron
+    name: pricespy-scraper
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    schedule: "0 */6 * * *"  # Every 6 hours
+    startCommand: python scripts/run_scraper.py
+    envVars:
+      - key: SERPAPI_KEY
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: FROM_EMAIL
+        value: onboarding@resend.dev
+      - key: DATABASE_PATH
+        value: /data/pricespy.db
+    disk:
+      name: pricespy-data
+      mountPath: /data
+      sizeGB: 1
+    plan: free
