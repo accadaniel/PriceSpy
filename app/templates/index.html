@@ -83,23 +83,32 @@
                 <td data-label="Product">
                     <a href="/product/{{ product.id }}" class="product-name">{{ product.name }}</a>
                     <div class="product-query">{{ product.search_query }}</div>
-                    {% if product.size or product.color %}
                     <div class="product-variants">
+                        {% if product.category %}
+                        <span class="variant-tag" style="background: {% if product.category == 'electronics' %}rgba(59, 130, 246, 0.2); color: #3b82f6;{% else %}rgba(236, 72, 153, 0.2); color: #ec4899;{% endif %}">
+                            {{ product.category|capitalize }}
+                        </span>
+                        {% endif %}
+                        {% if product.region %}
+                        <span class="variant-tag" style="background: rgba(34, 197, 94, 0.2); color: #22c55e;">
+                            {{ 'EU' if product.region == 'eu' else ('HU' if product.region == 'hu' else 'World') }}
+                        </span>
+                        {% endif %}
                         {% if product.size %}<span class="variant-tag">{{ product.size }}</span>{% endif %}
                         {% if product.color %}<span class="variant-tag">{{ product.color }}</span>{% endif %}
+                        {% if product.brand %}<span class="variant-tag">{{ product.brand }}</span>{% endif %}
                     </div>
-                    {% endif %}
                 </td>
                 <td data-label="Current Price">
                     {% if product.lowest_price %}
-                    <div class="price-current">${{ "%.2f"|format(product.lowest_price) }}</div>
+                    <div class="price-current">{{ product.currency|default('EUR', true) }} {{ "%.2f"|format(product.lowest_price) }}</div>
                     <div class="retailer-name">{{ product.lowest_price_retailer }}</div>
                     {% else %}
                     <span class="text-muted">No data yet</span>
                     {% endif %}
                 </td>
                 <td data-label="Target">
-                    <div class="price-target">${{ "%.2f"|format(product.target_price) }}</div>
+                    <div class="price-target">{{ product.currency|default('EUR', true) }} {{ "%.2f"|format(product.target_price) }}</div>
                 </td>
                 <td data-label="Status">
                     {% if not product.is_active %}

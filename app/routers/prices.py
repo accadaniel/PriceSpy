@@ -36,12 +36,17 @@ async def scrape_product(product_id: int):
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
 
-    # Scrape prices
+    # Scrape prices with all product attributes
     prices = await scrape_product_prices(
         product_id=product_id,
         search_query=product["search_query"],
+        region=product.get("region", "eu"),
         size=product.get("size"),
         color=product.get("color"),
+        brand=product.get("brand"),
+        model=product.get("model"),
+        storage=product.get("storage"),
+        material=product.get("material"),
     )
 
     if not prices:
@@ -54,7 +59,7 @@ async def scrape_product(product_id: int):
             retailer=price_data["retailer"],
             price=price_data["price"],
             url=price_data["url"],
-            currency=price_data.get("currency", "USD"),
+            currency=price_data.get("currency", "EUR"),
         )
 
     # Check for alerts
@@ -84,8 +89,13 @@ async def scrape_all_products():
             prices = await scrape_product_prices(
                 product_id=product["id"],
                 search_query=product["search_query"],
+                region=product.get("region", "eu"),
                 size=product.get("size"),
                 color=product.get("color"),
+                brand=product.get("brand"),
+                model=product.get("model"),
+                storage=product.get("storage"),
+                material=product.get("material"),
             )
 
             for price_data in prices:
@@ -94,7 +104,7 @@ async def scrape_all_products():
                     retailer=price_data["retailer"],
                     price=price_data["price"],
                     url=price_data["url"],
-                    currency=price_data.get("currency", "USD"),
+                    currency=price_data.get("currency", "EUR"),
                 )
 
             # Check for alerts

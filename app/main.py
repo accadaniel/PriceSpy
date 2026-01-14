@@ -73,19 +73,33 @@ async def add_product_submit(
     request: Request,
     name: str = Form(...),
     search_query: str = Form(...),
+    category: str = Form(...),
+    region: str = Form(...),
     target_price: float = Form(...),
+    currency: str = Form("EUR"),
     user_email: str = Form(...),
     size: Optional[str] = Form(None),
     color: Optional[str] = Form(None),
+    brand: Optional[str] = Form(None),
+    model: Optional[str] = Form(None),
+    storage: Optional[str] = Form(None),
+    material: Optional[str] = Form(None),
 ):
     """Handle add product form submission."""
     await database.create_product(
         name=name,
         search_query=search_query,
+        category=category,
+        region=region,
         target_price=target_price,
+        currency=currency,
         user_email=user_email,
         size=size if size else None,
         color=color if color else None,
+        brand=brand if brand else None,
+        model=model if model else None,
+        storage=storage if storage else None,
+        material=material if material else None,
     )
     return RedirectResponse(url="/", status_code=303)
 

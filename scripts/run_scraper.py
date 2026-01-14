@@ -45,14 +45,21 @@ async def run_scraper():
     for product in products:
         print(f"\n--- Scraping: {product['name']} ---")
         print(f"    Query: {product['search_query']}")
+        print(f"    Region: {product.get('region', 'eu')}")
+        print(f"    Category: {product.get('category', 'electronics')}")
 
         try:
-            # Scrape prices
+            # Scrape prices with all product attributes
             prices = await scrape_product_prices(
                 product_id=product["id"],
                 search_query=product["search_query"],
+                region=product.get("region", "eu"),
                 size=product.get("size"),
                 color=product.get("color"),
+                brand=product.get("brand"),
+                model=product.get("model"),
+                storage=product.get("storage"),
+                material=product.get("material"),
             )
 
             if not prices:
@@ -68,15 +75,16 @@ async def run_scraper():
                     retailer=price_data["retailer"],
                     price=price_data["price"],
                     url=price_data["url"],
-                    currency=price_data.get("currency", "USD"),
+                    currency=price_data.get("currency", "EUR"),
                 )
 
             total_prices += len(prices)
 
             # Find lowest price and check for alerts
             lowest = min(prices, key=lambda x: x["price"])
-            print(f"    Lowest: ${lowest['price']:.2f} at {lowest['retailer']}")
-            print(f"    Target: ${product['target_price']:.2f}")
+            currency = product.get("currency", "EUR")
+            print(f"    Lowest: {currency} {lowest['price']:.2f} at {lowest['retailer']}")
+            print(f"    Target: {currency} {product['target_price']:.2f}")
 
             if lowest["price"] < product["target_price"]:
                 print(f"    Price is below target! Checking for alert...")

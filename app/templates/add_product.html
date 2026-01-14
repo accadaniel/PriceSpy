@@ -11,55 +11,136 @@
     </div>
 </div>
 
-<div class="card" style="max-width: 700px;">
+<div class="card" style="max-width: 800px;">
     <div class="card-header">
         <h2 class="card-title">Product Details</h2>
     </div>
     <div class="card-body">
-        <form method="post" action="/add">
+        <form method="post" action="/add" id="productForm">
+            <!-- Category & Region Selection -->
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="category" class="form-label">Category</label>
+                    <select id="category" name="category" class="form-input" required onchange="toggleCategoryFields()">
+                        <option value="electronics">Electronics</option>
+                        <option value="clothes">Clothes & Fashion</option>
+                    </select>
+                    <div class="form-hint">Product category determines available options</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="region" class="form-label">Search Region</label>
+                    <select id="region" name="region" class="form-input" required onchange="updateCurrency()">
+                        <option value="eu">European Union (No customs for Hungary)</option>
+                        <option value="worldwide">Worldwide (May have customs/taxes)</option>
+                        <option value="hu">Hungary Only</option>
+                    </select>
+                    <div class="form-hint">EU search avoids customs and import taxes</div>
+                </div>
+            </div>
+
+            <!-- Basic Info -->
             <div class="form-group">
                 <label for="name" class="form-label">Product Name</label>
                 <input type="text" id="name" name="name" class="form-input" required
                        placeholder="e.g., Apple AirPods Pro 2nd Gen">
-                <div class="form-hint">A friendly name to identify this product in your dashboard</div>
+                <div class="form-hint">A friendly name to identify this product</div>
             </div>
 
             <div class="form-group">
                 <label for="search_query" class="form-label">Search Query</label>
                 <input type="text" id="search_query" name="search_query" class="form-input" required
                        placeholder="e.g., AirPods Pro 2">
-                <div class="form-hint">Keywords used to search on Google Shopping - be specific for better results</div>
+                <div class="form-hint">Keywords for Google Shopping search - be specific</div>
             </div>
 
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="size" class="form-label">Size <span class="text-muted">(optional)</span></label>
-                    <input type="text" id="size" name="size" class="form-input"
-                           placeholder="e.g., Large, 42mm, 256GB">
-                    <div class="form-hint">Product size or capacity variant</div>
+            <!-- Electronics Fields -->
+            <div id="electronics-fields">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="brand" class="form-label">Brand <span class="text-muted">(optional)</span></label>
+                        <input type="text" id="brand" name="brand" class="form-input"
+                               placeholder="e.g., Apple, Samsung, Sony">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="model" class="form-label">Model <span class="text-muted">(optional)</span></label>
+                        <input type="text" id="model" name="model" class="form-input"
+                               placeholder="e.g., iPhone 15 Pro, Galaxy S24">
+                    </div>
                 </div>
 
-                <div class="form-group">
-                    <label for="color" class="form-label">Color <span class="text-muted">(optional)</span></label>
-                    <input type="text" id="color" name="color" class="form-input"
-                           placeholder="e.g., Black, Space Gray">
-                    <div class="form-hint">Product color variant</div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="storage" class="form-label">Storage/Capacity <span class="text-muted">(optional)</span></label>
+                        <input type="text" id="storage" name="storage" class="form-input"
+                               placeholder="e.g., 256GB, 1TB, 16GB RAM">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="color_electronics" class="form-label">Color <span class="text-muted">(optional)</span></label>
+                        <input type="text" id="color_electronics" name="color" class="form-input color-field"
+                               placeholder="e.g., Space Black, Silver">
+                    </div>
                 </div>
             </div>
 
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="target_price" class="form-label">Target Price ($)</label>
-                    <input type="number" id="target_price" name="target_price" class="form-input" required
-                           step="0.01" min="0" placeholder="199.99">
-                    <div class="form-hint">You'll be alerted when price drops below this</div>
+            <!-- Clothes Fields -->
+            <div id="clothes-fields" style="display: none;">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="brand_clothes" class="form-label">Brand <span class="text-muted">(optional)</span></label>
+                        <input type="text" id="brand_clothes" class="form-input"
+                               placeholder="e.g., Nike, Adidas, Zara">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="size" class="form-label">Size <span class="text-muted">(optional)</span></label>
+                        <input type="text" id="size" name="size" class="form-input"
+                               placeholder="e.g., M, L, XL, 42, EU 38">
+                    </div>
                 </div>
 
-                <div class="form-group">
-                    <label for="user_email" class="form-label">Email for Alerts</label>
-                    <input type="email" id="user_email" name="user_email" class="form-input" required
-                           placeholder="you@example.com">
-                    <div class="form-hint">Where to send price drop notifications</div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="color_clothes" class="form-label">Color <span class="text-muted">(optional)</span></label>
+                        <input type="text" id="color_clothes" class="form-input color-field"
+                               placeholder="e.g., Black, Navy Blue, White">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="material" class="form-label">Material <span class="text-muted">(optional)</span></label>
+                        <input type="text" id="material" name="material" class="form-input"
+                               placeholder="e.g., Cotton, Leather, Wool">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Price & Alert Settings -->
+            <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--border);">
+                <h3 style="margin-bottom: 20px; font-size: 1rem; color: var(--text-secondary);">Price Alert Settings</h3>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="target_price" class="form-label">Target Price</label>
+                        <div style="display: flex; gap: 8px;">
+                            <input type="number" id="target_price" name="target_price" class="form-input" required
+                                   step="0.01" min="0" placeholder="199.99" style="flex: 1;">
+                            <select id="currency" name="currency" class="form-input" style="width: 100px;">
+                                <option value="EUR">EUR</option>
+                                <option value="USD">USD</option>
+                                <option value="HUF">HUF</option>
+                            </select>
+                        </div>
+                        <div class="form-hint">Alert when price drops below this amount</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="user_email" class="form-label">Email for Alerts</label>
+                        <input type="email" id="user_email" name="user_email" class="form-input" required
+                               placeholder="you@example.com">
+                        <div class="form-hint">Where to send price drop notifications</div>
+                    </div>
                 </div>
             </div>
 
@@ -75,4 +156,58 @@
         </form>
     </div>
 </div>
+
+<script>
+function toggleCategoryFields() {
+    const category = document.getElementById('category').value;
+    const electronicsFields = document.getElementById('electronics-fields');
+    const clothesFields = document.getElementById('clothes-fields');
+
+    if (category === 'electronics') {
+        electronicsFields.style.display = 'block';
+        clothesFields.style.display = 'none';
+        // Clear clothes fields
+        document.getElementById('size').value = '';
+        document.getElementById('material').value = '';
+    } else {
+        electronicsFields.style.display = 'none';
+        clothesFields.style.display = 'block';
+        // Clear electronics fields
+        document.getElementById('storage').value = '';
+        document.getElementById('model').value = '';
+    }
+}
+
+function updateCurrency() {
+    const region = document.getElementById('region').value;
+    const currency = document.getElementById('currency');
+
+    if (region === 'eu') {
+        currency.value = 'EUR';
+    } else if (region === 'hu') {
+        currency.value = 'HUF';
+    } else {
+        currency.value = 'USD';
+    }
+}
+
+// Sync brand fields between categories
+document.getElementById('brand').addEventListener('input', function() {
+    document.getElementById('brand_clothes').value = this.value;
+});
+document.getElementById('brand_clothes').addEventListener('input', function() {
+    document.getElementById('brand').value = this.value;
+});
+
+// Sync color fields
+document.getElementById('color_electronics').addEventListener('input', function() {
+    document.getElementById('color_clothes').value = this.value;
+});
+document.getElementById('color_clothes').addEventListener('input', function() {
+    document.getElementById('color_electronics').value = this.value;
+});
+
+// Initialize
+toggleCategoryFields();
+</script>
 {% endblock %}

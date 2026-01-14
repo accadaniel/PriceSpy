@@ -36,7 +36,7 @@
         <div class="detail-info">
             <div class="detail-item">
                 <div class="label">Target Price</div>
-                <div class="value">${{ "%.2f"|format(product.target_price) }}</div>
+                <div class="value">{{ product.currency|default('EUR', true) }} {{ "%.2f"|format(product.target_price) }}</div>
             </div>
             <div class="detail-item">
                 <div class="label">Status</div>
@@ -50,6 +50,40 @@
                     {% endif %}
                 </div>
             </div>
+            <div class="detail-item">
+                <div class="label">Category</div>
+                <div class="value">
+                    <span class="badge" style="background: {% if product.category == 'electronics' %}rgba(59, 130, 246, 0.2); color: #3b82f6;{% else %}rgba(236, 72, 153, 0.2); color: #ec4899;{% endif %}">
+                        {{ (product.category or 'electronics')|capitalize }}
+                    </span>
+                </div>
+            </div>
+            <div class="detail-item">
+                <div class="label">Search Region</div>
+                <div class="value">
+                    <span class="badge" style="background: rgba(34, 197, 94, 0.2); color: #22c55e;">
+                        {% if product.region == 'eu' %}European Union{% elif product.region == 'hu' %}Hungary{% else %}Worldwide{% endif %}
+                    </span>
+                </div>
+            </div>
+            {% if product.brand %}
+            <div class="detail-item">
+                <div class="label">Brand</div>
+                <div class="value">{{ product.brand }}</div>
+            </div>
+            {% endif %}
+            {% if product.model %}
+            <div class="detail-item">
+                <div class="label">Model</div>
+                <div class="value">{{ product.model }}</div>
+            </div>
+            {% endif %}
+            {% if product.storage %}
+            <div class="detail-item">
+                <div class="label">Storage</div>
+                <div class="value">{{ product.storage }}</div>
+            </div>
+            {% endif %}
             {% if product.size %}
             <div class="detail-item">
                 <div class="label">Size</div>
@@ -60,6 +94,12 @@
             <div class="detail-item">
                 <div class="label">Color</div>
                 <div class="value">{{ product.color }}</div>
+            </div>
+            {% endif %}
+            {% if product.material %}
+            <div class="detail-item">
+                <div class="label">Material</div>
+                <div class="value">{{ product.material }}</div>
             </div>
             {% endif %}
             <div class="detail-item">

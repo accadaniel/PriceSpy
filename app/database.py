@@ -23,14 +23,51 @@ async def init_db():
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
                 search_query TEXT NOT NULL,
+                category TEXT DEFAULT 'electronics',
+                region TEXT DEFAULT 'eu',
                 size TEXT,
                 color TEXT,
+                brand TEXT,
+                model TEXT,
+                storage TEXT,
+                material TEXT,
                 target_price REAL NOT NULL,
+                currency TEXT DEFAULT 'EUR',
                 user_email TEXT NOT NULL,
                 is_active BOOLEAN DEFAULT 1,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         """)
+
+        # Migration: Add new columns if they don't exist
+        try:
+            await db.execute("ALTER TABLE products ADD COLUMN category TEXT DEFAULT 'electronics'")
+        except:
+            pass
+        try:
+            await db.execute("ALTER TABLE products ADD COLUMN region TEXT DEFAULT 'eu'")
+        except:
+            pass
+        try:
+            await db.execute("ALTER TABLE products ADD COLUMN brand TEXT")
+        except:
+            pass
+        try:
+            await db.execute("ALTER TABLE products ADD COLUMN model TEXT")
+        except:
+            pass
+        try:
+            await db.execute("ALTER TABLE products ADD COLUMN storage TEXT")
+        except:
+            pass
+        try:
+            await db.execute("ALTER TABLE products ADD COLUMN material TEXT")
+        except:
+            pass
+        try:
+            await db.execute("ALTER TABLE products ADD COLUMN currency TEXT DEFAULT 'EUR'")
+        except:
+            pass
 
         await db.execute("""
             CREATE TABLE IF NOT EXISTS price_history (
@@ -76,17 +113,24 @@ async def create_product(
     search_query: str,
     target_price: float,
     user_email: str,
+    category: str = "electronics",
+    region: str = "eu",
     size: Optional[str] = None,
-    color: Optional[str] = None
+    color: Optional[str] = None,
+    brand: Optional[str] = None,
+    model: Optional[str] = None,
+    storage: Optional[str] = None,
+    material: Optional[str] = None,
+    currency: str = "EUR"
 ) -> int:
     db_path = await get_db_path()
     async with aiosqlite.connect(db_path) as db:
         cursor = await db.execute(
             """
-            INSERT INTO products (name, search_query, size, color, target_price, user_email)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO products (name, search_query, category, region, size, color, brand, model, storage, material, target_price, currency, user_email)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
-            (name, search_query, size, color, target_price, user_email)
+            (name, search_query, category, region, size, color, brand, model, storage, material, target_price, currency, user_email)
         )
         await db.commit()
         return cursor.lastrowid

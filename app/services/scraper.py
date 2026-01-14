@@ -4,12 +4,40 @@ from ..config import get_settings
 import re
 
 
+# Region configuration for SerpAPI
+REGION_CONFIG = {
+    "eu": {
+        "gl": "de",  # Germany as main EU market
+        "hl": "en",  # English language
+        "currency": "EUR",
+        "location": "Germany",
+    },
+    "worldwide": {
+        "gl": "us",  # US for worldwide (largest market)
+        "hl": "en",
+        "currency": "USD",
+        "location": "United States",
+    },
+    "hu": {
+        "gl": "hu",  # Hungary specifically
+        "hl": "hu",
+        "currency": "HUF",
+        "location": "Hungary",
+    }
+}
+
+
 def extract_price(price_str: str) -> Optional[float]:
-    """Extract numeric price from a string like '$99.99' or '99,99 EUR'."""
+    """Extract numeric price from a string like '$99.99', '99,99 EUR', or '29 999 Ft'."""
     if not price_str:
         return None
-    # Remove currency symbols and extract number
-    numbers = re.findall(r'[\d,]+\.?\d*', price_str.replace(',', ''))
+    # Remove currency symbols and normalize
+    cleaned = price_str.replace(',', '.').replace(' ', '')
+    # Remove common currency symbols
+    cleaned = re.sub(r'[€$£¥₹Ft]', '', cleaned)
+    cleaned = re.sub(r'EUR|USD|GBP|HUF', '', cleaned)
+    # Extract number
+    numbers = re.findall(r'[\d]+\.?\d*', cleaned)
     if numbers:
         try:
             return float(numbers[0])
@@ -20,8 +48,13 @@ def extract_price(price_str: str) -> Optional[float]:
 
 def search_google_shopping(
     query: str,
+    region: str = "eu",
     size: Optional[str] = None,
     color: Optional[str] = None,
+    brand: Optional[str] = None,
+    model: Optional[str] = None,
+    storage: Optional[str] = None,
+    material: Optional[str] = None,
     max_results: int = 10
 ) -> List[dict]:
     """
@@ -34,26 +67,44 @@ def search_google_shopping(
     if not settings.serpapi_key:
         raise ValueError("SERPAPI_KEY not configured")
 
-    # Build search query with variants
-    search_query = query
+    # Get region config
+    region_cfg = REGION_CONFIG.get(region, REGION_CONFIG["eu"])
+
+    # Build search query with all variants
+    search_parts = [query]
+    if brand:
+        search_parts.append(brand)
+    if model:
+        search_parts.append(model)
     if size:
-        search_query += f" {size}"
+        search_parts.append(size)
     if color:
-        search_query += f" {color}"
+        search_parts.append(color)
+    if storage:
+        search_parts.append(storage)
+    if material:
+        search_parts.append(material)
+
+    search_query = " ".join(search_parts)
 
     params = {
         "engine": "google_shopping",
         "q": search_query,
         "api_key": settings.serpapi_key,
         "num": max_results,
-        "hl": "en",
-        "gl": "us",
+        "hl": region_cfg["hl"],
+        "gl": region_cfg["gl"],
     }
+
+    # Add location for more accurate results
+    if "location" in region_cfg:
+        params["location"] = region_cfg["location"]
 
     search = GoogleSearch(params)
     results = search.get_dict()
 
     prices = []
+    currency = region_cfg["currency"]
 
     # Parse shopping results
     shopping_results = results.get("shopping_results", [])
@@ -74,7 +125,7 @@ def search_google_shopping(
         prices.append({
             "retailer": item.get("source", "Unknown"),
             "price": price,
-            "currency": "USD",  # SerpAPI Google Shopping US defaults to USD
+            "currency": currency,
             "url": item.get("link", ""),
             "title": item.get("title", ""),
             "thumbnail": item.get("thumbnail", ""),
@@ -86,8 +137,13 @@ def search_google_shopping(
 async def scrape_product_prices(
     product_id: int,
     search_query: str,
+    region: str = "eu",
     size: Optional[str] = None,
-    color: Optional[str] = None
+    color: Optional[str] = None,
+    brand: Optional[str] = None,
+    model: Optional[str] = None,
+    storage: Optional[str] = None,
+    material: Optional[str] = None,
 ) -> List[dict]:
     """
     Scrape prices for a product and return results.
@@ -99,7 +155,16 @@ async def scrape_product_prices(
     loop = asyncio.get_event_loop()
     prices = await loop.run_in_executor(
         None,
-        lambda: search_google_shopping(search_query, size, color)
+        lambda: search_google_shopping(
+            search_query,
+            region=region,
+            size=size,
+            color=color,
+            brand=brand,
+            model=model,
+            storage=storage,
+            material=material,
+        )
     )
 
     return prices
