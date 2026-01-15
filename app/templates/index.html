@@ -20,11 +20,11 @@
 </div>
 
 <!-- Electronics Section -->
+<div class="section-header">
+    <h2>Electronics</h2>
+    <a href="/add?category=electronics" class="btn btn-outline btn-sm">+ Add new</a>
+</div>
 <div class="card section-card">
-    <div class="card-header">
-        <h2 class="card-title">Electronics</h2>
-        <a href="/add?category=electronics" class="btn btn-outline btn-sm">+ Add new</a>
-    </div>
 
     {% set electronics = products|selectattr('category', 'equalto', 'electronics')|list + products|rejectattr('category')|list %}
     {% if electronics %}
@@ -90,11 +90,11 @@
 </div>
 
 <!-- Clothes Section -->
-<div class="card section-card" style="margin-top: 32px;">
-    <div class="card-header">
-        <h2 class="card-title">Clothes</h2>
-        <a href="/add?category=clothes" class="btn btn-outline btn-sm">+ Add new</a>
-    </div>
+<div class="section-header" style="margin-top: 40px;">
+    <h2>Clothes</h2>
+    <a href="/add?category=clothes" class="btn btn-outline btn-sm">+ Add new</a>
+</div>
+<div class="card section-card">
 
     {% set clothes = products|selectattr('category', 'equalto', 'clothes')|list %}
     {% if clothes %}

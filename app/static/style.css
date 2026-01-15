@@ -242,46 +242,24 @@ a:hover {
     padding: 0;
 }
 
+/* Section Header */
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.section-header h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
 /* Section Cards */
 .section-card {
-    margin-bottom: 24px;
-}
-
-.section-card .card-title {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.section-icon {
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.section-icon svg {
-    width: 18px;
-    height: 18px;
-}
-
-.section-icon.electronics {
-    background: rgba(59, 130, 246, 0.1);
-    color: #3b82f6;
-}
-
-.section-icon.clothes {
-    background: rgba(236, 72, 153, 0.1);
-    color: #ec4899;
-}
-
-.empty-state-inline {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 8px 0;
+    margin-bottom: 0;
 }
 
 /* Stats Grid */
