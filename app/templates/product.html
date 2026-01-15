@@ -141,7 +141,7 @@
             {% endif %}
             <div>
                 <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">Added</div>
-                <div style="font-weight: 500; color: var(--text-primary);">{{ product.created_at[:10] if product.created_at else 'N/A' }}</div>
+                <div style="font-weight: 500; color: var(--text-primary);">{{ product.created_at.strftime('%Y-%m-%d') if product.created_at else 'N/A' }}</div>
             </div>
         </div>
     </div>
@@ -161,7 +161,7 @@
                 <li style="display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; border-bottom: 1px solid var(--border-light); {% if loop.first %}background: rgba(34, 197, 94, 0.05);{% endif %}">
                     <div>
                         <div style="font-weight: 600; color: var(--text-primary);">{{ price.retailer }}</div>
-                        <div style="font-size: 0.75rem; color: var(--text-muted);">{{ price.scraped_at[:16] if price.scraped_at else '' }}</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">{{ price.scraped_at.strftime('%Y-%m-%d %H:%M') if price.scraped_at else '' }}</div>
                     </div>
                     <div style="display: flex; align-items: center; gap: 12px;">
                         <span style="font-weight: 700; font-size: 1.125rem; {% if loop.first %}color: var(--accent);{% else %}color: var(--text-primary);{% endif %}">
@@ -234,7 +234,7 @@
         <div class="products-list">
             {% for record in price_history %}
             <div class="product-row" style="grid-template-columns: 1fr 1fr 1fr auto;">
-                <div style="font-size: 0.875rem; color: var(--text-secondary);">{{ record.scraped_at[:16] if record.scraped_at else '' }}</div>
+                <div style="font-size: 0.875rem; color: var(--text-secondary);">{{ record.scraped_at.strftime('%Y-%m-%d %H:%M') if record.scraped_at else '' }}</div>
                 <div style="font-weight: 500;">{{ record.retailer }}</div>
                 <div style="font-weight: 600; {% if record.price < product.target_price %}color: var(--success);{% else %}color: var(--text-primary);{% endif %}">
                     {{ product.currency|default('EUR', true) }} {{ "%.2f"|format(record.price) }}
