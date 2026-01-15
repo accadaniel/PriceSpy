@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Add Product - PriceSpy{% endblock %}
+{% block title %}Add {{ 'Clothes' if category == 'clothes' else 'Electronics' }} - PriceSpy{% endblock %}
 
 {% block content %}
 <a href="/" class="back-link">
@@ -12,107 +12,66 @@
 
 <div class="card form-card">
     <div class="card-header">
-        <h2 class="card-title">Add New Product</h2>
+        <h2 class="card-title">
+            {% if category == 'clothes' %}
+            <span class="section-icon clothes">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6.115 5.19l.319 1.913A6 6 0 008.11 10.36L9.75 12l-.387.775c-.217.433-.132.956.21 1.298l1.348 1.348c.21.21.329.497.329.795v1.089c0 .426.24.815.622 1.006l.153.076c.433.217.956.132 1.298-.21l.723-.723a8.7 8.7 0 002.288-4.042 1.087 1.087 0 00-.358-1.099l-1.33-1.108c-.251-.21-.582-.299-.905-.245l-1.17.195a1.125 1.125 0 01-.98-.314l-.295-.295a1.125 1.125 0 010-1.591l.13-.132a1.125 1.125 0 011.3-.21l.603.302a.809.809 0 001.086-1.086L14.25 7.5l1.256-.837a4.5 4.5 0 001.528-1.732l.146-.292M6.115 5.19A9 9 0 1017.18 4.64M6.115 5.19A8.965 8.965 0 0112 3c1.929 0 3.716.607 5.18 1.64" />
+                </svg>
+            </span>
+            Add Clothes
+            {% else %}
+            <span class="section-icon electronics">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+            </span>
+            Add Electronics
+            {% endif %}
+        </h2>
     </div>
     <div class="card-body">
         <form method="post" action="/add" id="productForm">
-            <!-- Category & Region -->
-            <div class="form-section">
-                <div class="form-section-title">Basic Settings</div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="category" class="form-label">Category</label>
-                        <select id="category" name="category" class="form-select" required onchange="toggleCategoryFields()">
-                            <option value="electronics">Electronics</option>
-                            <option value="clothes">Clothes & Fashion</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="region" class="form-label">Search Region</label>
-                        <select id="region" name="region" class="form-select" required onchange="updateCurrency()">
-                            <option value="eu">European Union</option>
-                            <option value="worldwide">Worldwide</option>
-                            <option value="hu">Hungary Only</option>
-                        </select>
-                        <div class="form-hint">EU avoids customs for Hungary</div>
-                    </div>
-                </div>
-            </div>
+            <input type="hidden" name="category" value="{{ category or 'electronics' }}">
 
             <!-- Product Info -->
             <div class="form-section">
-                <div class="form-section-title">Product Information</div>
                 <div class="form-group">
                     <label for="name" class="form-label">Product Name</label>
                     <input type="text" id="name" name="name" class="form-input" required
-                           placeholder="e.g., Apple AirPods Pro 2nd Gen">
+                           placeholder="{% if category == 'clothes' %}e.g., Nike Air Max 90{% else %}e.g., Apple AirPods Pro 2nd Gen{% endif %}">
                 </div>
 
                 <div class="form-group">
                     <label for="search_query" class="form-label">Search Query</label>
                     <input type="text" id="search_query" name="search_query" class="form-input" required
-                           placeholder="e.g., AirPods Pro 2">
+                           placeholder="{% if category == 'clothes' %}e.g., Nike Air Max 90 Black{% else %}e.g., AirPods Pro 2{% endif %}">
                     <div class="form-hint">Keywords for Google Shopping search</div>
                 </div>
             </div>
 
-            <!-- Electronics Fields -->
-            <div id="electronics-fields" class="form-section">
-                <div class="form-section-title">Electronics Details</div>
+            {% if category == 'clothes' %}
+            <!-- Clothes Details -->
+            <div class="form-section">
+                <div class="form-section-title">Details</div>
                 <div class="form-row">
                     <div class="form-group">
                         <label for="brand" class="form-label">Brand <span class="optional">(optional)</span></label>
                         <input type="text" id="brand" name="brand" class="form-input"
-                               placeholder="e.g., Apple, Samsung">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="model" class="form-label">Model <span class="optional">(optional)</span></label>
-                        <input type="text" id="model" name="model" class="form-input"
-                               placeholder="e.g., iPhone 15 Pro">
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="storage" class="form-label">Storage <span class="optional">(optional)</span></label>
-                        <input type="text" id="storage" name="storage" class="form-input"
-                               placeholder="e.g., 256GB">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="color_electronics" class="form-label">Color <span class="optional">(optional)</span></label>
-                        <input type="text" id="color_electronics" name="color" class="form-input color-field"
-                               placeholder="e.g., Space Black">
-                    </div>
-                </div>
-            </div>
-
-            <!-- Clothes Fields -->
-            <div id="clothes-fields" class="form-section" style="display: none;">
-                <div class="form-section-title">Clothing Details</div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="brand_clothes" class="form-label">Brand <span class="optional">(optional)</span></label>
-                        <input type="text" id="brand_clothes" class="form-input"
                                placeholder="e.g., Nike, Adidas">
                     </div>
-
                     <div class="form-group">
                         <label for="size" class="form-label">Size <span class="optional">(optional)</span></label>
                         <input type="text" id="size" name="size" class="form-input"
-                               placeholder="e.g., M, L, XL">
+                               placeholder="e.g., M, L, 42">
                     </div>
                 </div>
-
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="color_clothes" class="form-label">Color <span class="optional">(optional)</span></label>
-                        <input type="text" id="color_clothes" class="form-input color-field"
+                        <label for="color" class="form-label">Color <span class="optional">(optional)</span></label>
+                        <input type="text" id="color" name="color" class="form-input"
                                placeholder="e.g., Black, Navy">
                     </div>
-
                     <div class="form-group">
                         <label for="material" class="form-label">Material <span class="optional">(optional)</span></label>
                         <input type="text" id="material" name="material" class="form-input"
@@ -120,11 +79,49 @@
                     </div>
                 </div>
             </div>
-
-            <!-- Price Alert -->
+            {% else %}
+            <!-- Electronics Details -->
             <div class="form-section">
-                <div class="form-section-title">Price Alert</div>
+                <div class="form-section-title">Details</div>
                 <div class="form-row">
+                    <div class="form-group">
+                        <label for="brand" class="form-label">Brand <span class="optional">(optional)</span></label>
+                        <input type="text" id="brand" name="brand" class="form-input"
+                               placeholder="e.g., Apple, Samsung">
+                    </div>
+                    <div class="form-group">
+                        <label for="model" class="form-label">Model <span class="optional">(optional)</span></label>
+                        <input type="text" id="model" name="model" class="form-input"
+                               placeholder="e.g., iPhone 15 Pro">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="storage" class="form-label">Storage <span class="optional">(optional)</span></label>
+                        <input type="text" id="storage" name="storage" class="form-input"
+                               placeholder="e.g., 256GB">
+                    </div>
+                    <div class="form-group">
+                        <label for="color" class="form-label">Color <span class="optional">(optional)</span></label>
+                        <input type="text" id="color" name="color" class="form-input"
+                               placeholder="e.g., Space Black">
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Region & Price -->
+            <div class="form-section">
+                <div class="form-section-title">Search & Alert</div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="region" class="form-label">Search Region</label>
+                        <select id="region" name="region" class="form-select" required onchange="updateCurrency()">
+                            <option value="eu">European Union (no customs)</option>
+                            <option value="worldwide">Worldwide</option>
+                            <option value="hu">Hungary Only</option>
+                        </select>
+                    </div>
                     <div class="form-group">
                         <label for="target_price" class="form-label">Target Price</label>
                         <div class="price-input-group">
@@ -136,14 +133,12 @@
                                 <option value="HUF">HUF</option>
                             </select>
                         </div>
-                        <div class="form-hint">Alert when price drops below</div>
                     </div>
-
-                    <div class="form-group">
-                        <label for="user_email" class="form-label">Email for Alerts</label>
-                        <input type="email" id="user_email" name="user_email" class="form-input" required
-                               placeholder="you@example.com">
-                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="user_email" class="form-label">Email for Alerts</label>
+                    <input type="email" id="user_email" name="user_email" class="form-input" required
+                           placeholder="you@example.com">
                 </div>
             </div>
 
@@ -152,7 +147,7 @@
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
                     </svg>
-                    Add Product
+                    Add {{ 'Clothes' if category == 'clothes' else 'Electronics' }}
                 </button>
                 <a href="/" class="btn btn-ghost">Cancel</a>
             </div>
@@ -161,24 +156,6 @@
 </div>
 
 <script>
-function toggleCategoryFields() {
-    const category = document.getElementById('category').value;
-    const electronicsFields = document.getElementById('electronics-fields');
-    const clothesFields = document.getElementById('clothes-fields');
-
-    if (category === 'electronics') {
-        electronicsFields.style.display = 'block';
-        clothesFields.style.display = 'none';
-        document.getElementById('size').value = '';
-        document.getElementById('material').value = '';
-    } else {
-        electronicsFields.style.display = 'none';
-        clothesFields.style.display = 'block';
-        document.getElementById('storage').value = '';
-        document.getElementById('model').value = '';
-    }
-}
-
 function updateCurrency() {
     const region = document.getElementById('region').value;
     const currency = document.getElementById('currency');
@@ -191,21 +168,5 @@ function updateCurrency() {
         currency.value = 'USD';
     }
 }
-
-document.getElementById('brand').addEventListener('input', function() {
-    document.getElementById('brand_clothes').value = this.value;
-});
-document.getElementById('brand_clothes').addEventListener('input', function() {
-    document.getElementById('brand').value = this.value;
-});
-
-document.getElementById('color_electronics').addEventListener('input', function() {
-    document.getElementById('color_clothes').value = this.value;
-});
-document.getElementById('color_clothes').addEventListener('input', function() {
-    document.getElementById('color_electronics').value = this.value;
-});
-
-toggleCategoryFields();
 </script>
 {% endblock %}

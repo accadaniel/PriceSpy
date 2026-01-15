@@ -19,14 +19,22 @@
     </div>
 </div>
 
-<!-- Products Card -->
-<div class="card">
+<!-- Electronics Section -->
+<div class="card section-card">
     <div class="card-header">
-        <h2 class="card-title">Tracked Products</h2>
-        <a href="/add" class="btn btn-outline btn-sm">+ Add New</a>
+        <h2 class="card-title">
+            <span class="section-icon electronics">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+            </span>
+            Electronics
+        </h2>
+        <a href="/add?category=electronics" class="btn btn-outline btn-sm">+ Add</a>
     </div>
 
-    {% if products %}
+    {% set electronics = products|selectattr('category', 'equalto', 'electronics')|list + products|rejectattr('category')|list %}
+    {% if electronics %}
     <div class="table-header">
         <div>Product</div>
         <div>Current Price</div>
@@ -35,21 +43,20 @@
         <div>Actions</div>
     </div>
     <div class="products-list">
-        {% for product in products %}
+        {% for product in electronics %}
         <div class="product-row">
             <div class="product-info">
                 <a href="/product/{{ product.id }}" class="product-name">{{ product.name }}</a>
-                <div class="product-meta">{{ product.search_query }}</div>
+                <div class="product-meta">
+                    {% if product.brand %}{{ product.brand }}{% endif %}
+                    {% if product.model %} {{ product.model }}{% endif %}
+                    {% if product.storage %} · {{ product.storage }}{% endif %}
+                    {% if product.color %} · {{ product.color }}{% endif %}
+                </div>
                 <div class="product-tags">
-                    {% if product.category %}
-                    <span class="tag {{ product.category }}">{{ product.category|capitalize }}</span>
-                    {% endif %}
-                    {% if product.region %}
                     <span class="tag {{ 'eu' if product.region == 'eu' else 'worldwide' }}">
                         {{ 'EU' if product.region == 'eu' else ('HU' if product.region == 'hu' else 'World') }}
                     </span>
-                    {% endif %}
-                    {% if product.brand %}<span class="tag">{{ product.brand }}</span>{% endif %}
                 </div>
             </div>
             <div class="price-display" data-label="Price">
@@ -65,29 +72,15 @@
             </div>
             <div data-label="Status">
                 {% if not product.is_active %}
-                <span class="badge badge-muted">
-                    <span class="status-dot"></span>
-                    Paused
-                </span>
+                <span class="badge badge-muted"><span class="status-dot"></span>Paused</span>
                 {% elif product.lowest_price and product.lowest_price < product.target_price %}
-                <span class="badge badge-success">
-                    <span class="status-dot"></span>
-                    Deal Found
-                </span>
+                <span class="badge badge-success"><span class="status-dot"></span>Deal</span>
                 {% else %}
-                <span class="badge badge-warning">
-                    <span class="status-dot"></span>
-                    Watching
-                </span>
+                <span class="badge badge-warning"><span class="status-dot"></span>Watching</span>
                 {% endif %}
             </div>
             <div class="actions">
                 <a href="/product/{{ product.id }}" class="btn btn-ghost btn-sm">View</a>
-                <form action="/product/{{ product.id }}/toggle" method="post" style="display:inline;">
-                    <button type="submit" class="btn btn-ghost btn-sm">
-                        {{ "Resume" if not product.is_active else "Pause" }}
-                    </button>
-                </form>
                 <form action="/product/{{ product.id }}/delete" method="post" style="display:inline;"
                       onsubmit="return confirm('Delete this product?');">
                     <button type="submit" class="btn btn-danger btn-sm">Delete</button>
@@ -98,15 +91,89 @@
     </div>
     {% else %}
     <div class="card-body">
-        <div class="empty-state">
-            <div class="empty-state-icon">
+        <div class="empty-state-inline">
+            <span class="text-muted">No electronics tracked yet</span>
+            <a href="/add?category=electronics" class="btn btn-outline btn-sm">Add Electronics</a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Clothes Section -->
+<div class="card section-card">
+    <div class="card-header">
+        <h2 class="card-title">
+            <span class="section-icon clothes">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6.115 5.19l.319 1.913A6 6 0 008.11 10.36L9.75 12l-.387.775c-.217.433-.132.956.21 1.298l1.348 1.348c.21.21.329.497.329.795v1.089c0 .426.24.815.622 1.006l.153.076c.433.217.956.132 1.298-.21l.723-.723a8.7 8.7 0 002.288-4.042 1.087 1.087 0 00-.358-1.099l-1.33-1.108c-.251-.21-.582-.299-.905-.245l-1.17.195a1.125 1.125 0 01-.98-.314l-.295-.295a1.125 1.125 0 010-1.591l.13-.132a1.125 1.125 0 011.3-.21l.603.302a.809.809 0 001.086-1.086L14.25 7.5l1.256-.837a4.5 4.5 0 001.528-1.732l.146-.292M6.115 5.19A9 9 0 1017.18 4.64M6.115 5.19A8.965 8.965 0 0112 3c1.929 0 3.716.607 5.18 1.64" />
                 </svg>
+            </span>
+            Clothes & Fashion
+        </h2>
+        <a href="/add?category=clothes" class="btn btn-outline btn-sm">+ Add</a>
+    </div>
+
+    {% set clothes = products|selectattr('category', 'equalto', 'clothes')|list %}
+    {% if clothes %}
+    <div class="table-header">
+        <div>Product</div>
+        <div>Current Price</div>
+        <div>Target</div>
+        <div>Status</div>
+        <div>Actions</div>
+    </div>
+    <div class="products-list">
+        {% for product in clothes %}
+        <div class="product-row">
+            <div class="product-info">
+                <a href="/product/{{ product.id }}" class="product-name">{{ product.name }}</a>
+                <div class="product-meta">
+                    {% if product.brand %}{{ product.brand }}{% endif %}
+                    {% if product.size %} · Size {{ product.size }}{% endif %}
+                    {% if product.color %} · {{ product.color }}{% endif %}
+                    {% if product.material %} · {{ product.material }}{% endif %}
+                </div>
+                <div class="product-tags">
+                    <span class="tag {{ 'eu' if product.region == 'eu' else 'worldwide' }}">
+                        {{ 'EU' if product.region == 'eu' else ('HU' if product.region == 'hu' else 'World') }}
+                    </span>
+                </div>
             </div>
-            <h3>No products yet</h3>
-            <p>Start tracking prices by adding your first product.</p>
-            <a href="/add" class="btn btn-primary">Add Your First Product</a>
+            <div class="price-display" data-label="Price">
+                {% if product.lowest_price %}
+                <div class="price-current">{{ product.currency|default('EUR', true) }} {{ "%.2f"|format(product.lowest_price) }}</div>
+                <div class="price-retailer">{{ product.lowest_price_retailer }}</div>
+                {% else %}
+                <span class="text-muted">No data yet</span>
+                {% endif %}
+            </div>
+            <div data-label="Target">
+                <div class="price-target">{{ product.currency|default('EUR', true) }} {{ "%.2f"|format(product.target_price) }}</div>
+            </div>
+            <div data-label="Status">
+                {% if not product.is_active %}
+                <span class="badge badge-muted"><span class="status-dot"></span>Paused</span>
+                {% elif product.lowest_price and product.lowest_price < product.target_price %}
+                <span class="badge badge-success"><span class="status-dot"></span>Deal</span>
+                {% else %}
+                <span class="badge badge-warning"><span class="status-dot"></span>Watching</span>
+                {% endif %}
+            </div>
+            <div class="actions">
+                <a href="/product/{{ product.id }}" class="btn btn-ghost btn-sm">View</a>
+                <form action="/product/{{ product.id }}/delete" method="post" style="display:inline;"
+                      onsubmit="return confirm('Delete this product?');">
+                    <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="card-body">
+        <div class="empty-state-inline">
+            <span class="text-muted">No clothes tracked yet</span>
+            <a href="/add?category=clothes" class="btn btn-outline btn-sm">Add Clothes</a>
         </div>
     </div>
     {% endif %}

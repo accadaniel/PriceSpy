@@ -60,11 +60,11 @@ async def home(request: Request):
 
 
 @app.get("/add")
-async def add_product_form(request: Request):
+async def add_product_form(request: Request, category: Optional[str] = None):
     """Show add product form."""
     return templates.TemplateResponse(
         "add_product.html",
-        {"request": request}
+        {"request": request, "category": category or "electronics"}
     )
 
 
