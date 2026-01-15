@@ -440,7 +440,101 @@ a:hover {
 }
 
 .price-target {
-    font-size: 1rem;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+/* Product Item with Sources */
+.product-item {
+    border-bottom: 1px solid var(--border-light);
+    padding: 20px 24px;
+}
+
+.product-item:last-child {
+    border-bottom: none;
+}
+
+.product-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 24px;
+}
+
+.product-header .product-info {
+    flex: 1;
+}
+
+.product-header .product-price {
+    text-align: right;
+    min-width: 120px;
+}
+
+.product-header .product-price .price-current {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.product-header .product-price .price-current.is-deal {
+    color: var(--success);
+}
+
+.product-header .product-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+/* Sources List */
+.product-sources {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-light);
+}
+
+.sources-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.source-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: var(--bg-main);
+    border-radius: var(--radius);
+    font-size: 0.85rem;
+    text-decoration: none;
+    transition: all 0.15s;
+}
+
+.source-item:hover {
+    background: var(--border);
+    color: var(--text-primary);
+}
+
+.source-item.is-lowest {
+    background: var(--success-light);
+}
+
+.source-item.is-lowest .source-price {
+    color: var(--success);
+    font-weight: 600;
+}
+
+.source-name {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.source-price {
     color: var(--text-secondary);
 }
 

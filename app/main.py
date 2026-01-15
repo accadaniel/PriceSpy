@@ -45,13 +45,16 @@ async def home(request: Request):
     """Home page - list all products."""
     products_list = await database.get_all_products()
 
-    # Enrich with latest prices
+    # Enrich with latest prices and sources
     for product in products_list:
         latest_prices = await database.get_latest_prices(product["id"])
         if latest_prices:
             product["lowest_price"] = latest_prices[0]["price"]
             product["lowest_price_retailer"] = latest_prices[0]["retailer"]
             product["lowest_price_url"] = latest_prices[0]["url"]
+            product["sources"] = latest_prices  # All retailers found
+        else:
+            product["sources"] = []
 
     return templates.TemplateResponse(
         "index.html",

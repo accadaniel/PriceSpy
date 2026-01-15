@@ -28,57 +28,48 @@
 
     {% set electronics = products|selectattr('category', 'equalto', 'electronics')|list + products|rejectattr('category')|list %}
     {% if electronics %}
-    <div class="table-header">
-        <div>Product</div>
-        <div>Current Price</div>
-        <div>Target</div>
-        <div>Status</div>
-        <div>Actions</div>
-    </div>
     <div class="products-list">
         {% for product in electronics %}
-        <div class="product-row">
-            <div class="product-info">
-                <a href="/product/{{ product.id }}" class="product-name">{{ product.name }}</a>
-                <div class="product-meta">
-                    {% if product.brand %}{{ product.brand }}{% endif %}
-                    {% if product.model %} {{ product.model }}{% endif %}
-                    {% if product.storage %} · {{ product.storage }}{% endif %}
-                    {% if product.color %} · {{ product.color }}{% endif %}
+        <div class="product-item">
+            <div class="product-header">
+                <div class="product-info">
+                    <a href="/product/{{ product.id }}" class="product-name">{{ product.name }}</a>
+                    <div class="product-meta">
+                        {% if product.brand %}{{ product.brand }}{% endif %}
+                        {% if product.model %} {{ product.model }}{% endif %}
+                        {% if product.storage %} · {{ product.storage }}{% endif %}
+                        {% if product.color %} · {{ product.color }}{% endif %}
+                    </div>
                 </div>
-                <div class="product-tags">
-                    <span class="tag {{ 'eu' if product.region == 'eu' else 'worldwide' }}">
-                        {{ 'EU' if product.region == 'eu' else ('HU' if product.region == 'hu' else 'World') }}
-                    </span>
+                <div class="product-price">
+                    {% if product.lowest_price %}
+                    <div class="price-current {% if product.lowest_price < product.target_price %}is-deal{% endif %}">
+                        {{ product.currency|default('EUR', true) }} {{ "%.2f"|format(product.lowest_price) }}
+                    </div>
+                    <div class="price-target">Target: {{ product.currency|default('EUR', true) }} {{ "%.2f"|format(product.target_price) }}</div>
+                    {% else %}
+                    <span class="text-muted">No prices yet</span>
+                    {% endif %}
+                </div>
+                <div class="product-actions">
+                    <a href="/product/{{ product.id }}" class="btn btn-ghost btn-sm">View</a>
+                    <form action="/product/{{ product.id }}/delete" method="post" style="display:inline;"
+                          onsubmit="return confirm('Delete this product?');">
+                        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                    </form>
                 </div>
             </div>
-            <div class="price-display" data-label="Price">
-                {% if product.lowest_price %}
-                <div class="price-current">{{ product.currency|default('EUR', true) }} {{ "%.2f"|format(product.lowest_price) }}</div>
-                <div class="price-retailer">{{ product.lowest_price_retailer }}</div>
-                {% else %}
-                <span class="text-muted">No data yet</span>
-                {% endif %}
+            {% if product.sources %}
+            <div class="product-sources">
+                <span class="sources-label">Sources found:</span>
+                {% for source in product.sources %}
+                <a href="{{ source.url }}" target="_blank" class="source-item {% if loop.first %}is-lowest{% endif %}">
+                    <span class="source-name">{{ source.retailer }}</span>
+                    <span class="source-price">{{ product.currency|default('EUR', true) }} {{ "%.2f"|format(source.price) }}</span>
+                </a>
+                {% endfor %}
             </div>
-            <div data-label="Target">
-                <div class="price-target">{{ product.currency|default('EUR', true) }} {{ "%.2f"|format(product.target_price) }}</div>
-            </div>
-            <div data-label="Status">
-                {% if not product.is_active %}
-                <span class="badge badge-muted"><span class="status-dot"></span>Paused</span>
-                {% elif product.lowest_price and product.lowest_price < product.target_price %}
-                <span class="badge badge-success"><span class="status-dot"></span>Deal</span>
-                {% else %}
-                <span class="badge badge-warning"><span class="status-dot"></span>Watching</span>
-                {% endif %}
-            </div>
-            <div class="actions">
-                <a href="/product/{{ product.id }}" class="btn btn-ghost btn-sm">View</a>
-                <form action="/product/{{ product.id }}/delete" method="post" style="display:inline;"
-                      onsubmit="return confirm('Delete this product?');">
-                    <button type="submit" class="btn btn-danger btn-sm">Delete</button>
-                </form>
-            </div>
+            {% endif %}
         </div>
         {% endfor %}
     </div>
@@ -98,57 +89,48 @@
 
     {% set clothes = products|selectattr('category', 'equalto', 'clothes')|list %}
     {% if clothes %}
-    <div class="table-header">
-        <div>Product</div>
-        <div>Current Price</div>
-        <div>Target</div>
-        <div>Status</div>
-        <div>Actions</div>
-    </div>
     <div class="products-list">
         {% for product in clothes %}
-        <div class="product-row">
-            <div class="product-info">
-                <a href="/product/{{ product.id }}" class="product-name">{{ product.name }}</a>
-                <div class="product-meta">
-                    {% if product.brand %}{{ product.brand }}{% endif %}
-                    {% if product.size %} · Size {{ product.size }}{% endif %}
-                    {% if product.color %} · {{ product.color }}{% endif %}
-                    {% if product.material %} · {{ product.material }}{% endif %}
+        <div class="product-item">
+            <div class="product-header">
+                <div class="product-info">
+                    <a href="/product/{{ product.id }}" class="product-name">{{ product.name }}</a>
+                    <div class="product-meta">
+                        {% if product.brand %}{{ product.brand }}{% endif %}
+                        {% if product.size %} · Size {{ product.size }}{% endif %}
+                        {% if product.color %} · {{ product.color }}{% endif %}
+                        {% if product.material %} · {{ product.material }}{% endif %}
+                    </div>
                 </div>
-                <div class="product-tags">
-                    <span class="tag {{ 'eu' if product.region == 'eu' else 'worldwide' }}">
-                        {{ 'EU' if product.region == 'eu' else ('HU' if product.region == 'hu' else 'World') }}
-                    </span>
+                <div class="product-price">
+                    {% if product.lowest_price %}
+                    <div class="price-current {% if product.lowest_price < product.target_price %}is-deal{% endif %}">
+                        {{ product.currency|default('EUR', true) }} {{ "%.2f"|format(product.lowest_price) }}
+                    </div>
+                    <div class="price-target">Target: {{ product.currency|default('EUR', true) }} {{ "%.2f"|format(product.target_price) }}</div>
+                    {% else %}
+                    <span class="text-muted">No prices yet</span>
+                    {% endif %}
+                </div>
+                <div class="product-actions">
+                    <a href="/product/{{ product.id }}" class="btn btn-ghost btn-sm">View</a>
+                    <form action="/product/{{ product.id }}/delete" method="post" style="display:inline;"
+                          onsubmit="return confirm('Delete this product?');">
+                        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                    </form>
                 </div>
             </div>
-            <div class="price-display" data-label="Price">
-                {% if product.lowest_price %}
-                <div class="price-current">{{ product.currency|default('EUR', true) }} {{ "%.2f"|format(product.lowest_price) }}</div>
-                <div class="price-retailer">{{ product.lowest_price_retailer }}</div>
-                {% else %}
-                <span class="text-muted">No data yet</span>
-                {% endif %}
+            {% if product.sources %}
+            <div class="product-sources">
+                <span class="sources-label">Sources found:</span>
+                {% for source in product.sources %}
+                <a href="{{ source.url }}" target="_blank" class="source-item {% if loop.first %}is-lowest{% endif %}">
+                    <span class="source-name">{{ source.retailer }}</span>
+                    <span class="source-price">{{ product.currency|default('EUR', true) }} {{ "%.2f"|format(source.price) }}</span>
+                </a>
+                {% endfor %}
             </div>
-            <div data-label="Target">
-                <div class="price-target">{{ product.currency|default('EUR', true) }} {{ "%.2f"|format(product.target_price) }}</div>
-            </div>
-            <div data-label="Status">
-                {% if not product.is_active %}
-                <span class="badge badge-muted"><span class="status-dot"></span>Paused</span>
-                {% elif product.lowest_price and product.lowest_price < product.target_price %}
-                <span class="badge badge-success"><span class="status-dot"></span>Deal</span>
-                {% else %}
-                <span class="badge badge-warning"><span class="status-dot"></span>Watching</span>
-                {% endif %}
-            </div>
-            <div class="actions">
-                <a href="/product/{{ product.id }}" class="btn btn-ghost btn-sm">View</a>
-                <form action="/product/{{ product.id }}/delete" method="post" style="display:inline;"
-                      onsubmit="return confirm('Delete this product?');">
-                    <button type="submit" class="btn btn-danger btn-sm">Delete</button>
-                </form>
-            </div>
+            {% endif %}
         </div>
         {% endfor %}
     </div>
