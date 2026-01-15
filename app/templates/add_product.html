@@ -18,6 +18,25 @@
         <form method="post" action="/add" id="productForm">
             <input type="hidden" name="category" value="{{ category or 'electronics' }}">
 
+            <!-- Auto-fill from URL -->
+            <div class="form-section">
+                <div class="form-group">
+                    <label for="product_url" class="form-label">Product URL <span class="optional">(optional)</span></label>
+                    <div class="url-input-group">
+                        <input type="url" id="product_url" name="product_url" class="form-input"
+                               placeholder="Paste a product URL to auto-fill details...">
+                        <button type="button" id="fetchUrlBtn" class="btn btn-secondary" onclick="fetchProductDetails()">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                            Fetch
+                        </button>
+                    </div>
+                    <div class="form-hint">Enter a product URL from any store to auto-fill the form</div>
+                    <div id="fetchStatus" class="fetch-status" style="display: none;"></div>
+                </div>
+            </div>
+
             <!-- Product Info -->
             <div class="form-section">
                 <div class="form-group">
@@ -150,6 +169,146 @@ function updateCurrency() {
         currency.value = 'HUF';
     } else {
         currency.value = 'USD';
+    }
+}
+
+async function fetchProductDetails() {
+    const urlInput = document.getElementById('product_url');
+    const fetchBtn = document.getElementById('fetchUrlBtn');
+    const statusDiv = document.getElementById('fetchStatus');
+    const url = urlInput.value.trim();
+
+    if (!url) {
+        showStatus('Please enter a product URL', 'error');
+        return;
+    }
+
+    // Validate URL format
+    try {
+        new URL(url);
+    } catch {
+        showStatus('Please enter a valid URL', 'error');
+        return;
+    }
+
+    // Get category
+    const category = document.querySelector('input[name="category"]').value;
+
+    // Show loading state
+    fetchBtn.disabled = true;
+    fetchBtn.innerHTML = `
+        <svg class="spinner" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        </svg>
+        Fetching...
+    `;
+    showStatus('Fetching product details...', 'loading');
+
+    try {
+        const response = await fetch('/api/products/scrape-url', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ url, category }),
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Failed to fetch product details');
+        }
+
+        const data = await response.json();
+
+        // Prefill form fields
+        let fieldsUpdated = 0;
+
+        if (data.name) {
+            document.getElementById('name').value = data.name;
+            fieldsUpdated++;
+        }
+        if (data.search_query) {
+            document.getElementById('search_query').value = data.search_query;
+            fieldsUpdated++;
+        }
+        if (data.brand) {
+            const brandField = document.getElementById('brand');
+            if (brandField) {
+                brandField.value = data.brand;
+                fieldsUpdated++;
+            }
+        }
+        if (data.model) {
+            const modelField = document.getElementById('model');
+            if (modelField) {
+                modelField.value = data.model;
+                fieldsUpdated++;
+            }
+        }
+        if (data.color) {
+            const colorField = document.getElementById('color');
+            if (colorField) {
+                colorField.value = data.color;
+                fieldsUpdated++;
+            }
+        }
+        if (data.size) {
+            const sizeField = document.getElementById('size');
+            if (sizeField) {
+                sizeField.value = data.size;
+                fieldsUpdated++;
+            }
+        }
+        if (data.storage) {
+            const storageField = document.getElementById('storage');
+            if (storageField) {
+                storageField.value = data.storage;
+                fieldsUpdated++;
+            }
+        }
+        if (data.material) {
+            const materialField = document.getElementById('material');
+            if (materialField) {
+                materialField.value = data.material;
+                fieldsUpdated++;
+            }
+        }
+        if (data.price) {
+            document.getElementById('target_price').value = data.price;
+            fieldsUpdated++;
+        }
+
+        if (fieldsUpdated > 0) {
+            showStatus(`Found ${fieldsUpdated} field${fieldsUpdated > 1 ? 's' : ''}. Review and adjust as needed.`, 'success');
+        } else {
+            showStatus('Could not extract product details from this URL. Please fill in manually.', 'warning');
+        }
+
+    } catch (error) {
+        showStatus(error.message, 'error');
+    } finally {
+        // Reset button
+        fetchBtn.disabled = false;
+        fetchBtn.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Fetch
+        `;
+    }
+}
+
+function showStatus(message, type) {
+    const statusDiv = document.getElementById('fetchStatus');
+    statusDiv.textContent = message;
+    statusDiv.className = 'fetch-status fetch-status-' + type;
+    statusDiv.style.display = 'block';
+
+    // Auto-hide success/warning messages after 5 seconds
+    if (type === 'success' || type === 'warning') {
+        setTimeout(() => {
+            statusDiv.style.display = 'none';
+        }, 5000);
     }
 }
 </script>

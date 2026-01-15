@@ -667,6 +667,64 @@ a:hover {
     width: 100px;
 }
 
+/* URL Input Group */
+.url-input-group {
+    display: flex;
+    gap: 8px;
+}
+
+.url-input-group .form-input {
+    flex: 1;
+}
+
+.url-input-group .btn {
+    white-space: nowrap;
+    padding: 14px 20px;
+}
+
+.url-input-group .btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Fetch Status */
+.fetch-status {
+    margin-top: 8px;
+    padding: 10px 14px;
+    border-radius: var(--radius);
+    font-size: 0.85rem;
+}
+
+.fetch-status-loading {
+    background: var(--bg-main);
+    color: var(--text-secondary);
+}
+
+.fetch-status-success {
+    background: var(--success-light);
+    color: var(--success);
+}
+
+.fetch-status-warning {
+    background: rgba(245, 158, 11, 0.1);
+    color: var(--warning);
+}
+
+.fetch-status-error {
+    background: var(--accent-light);
+    color: var(--accent);
+}
+
+/* Spinner Animation */
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.spinner {
+    animation: spin 1s linear infinite;
+}
+
 /* Detail Page */
 .detail-header {
     display: flex;
