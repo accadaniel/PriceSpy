@@ -106,26 +106,35 @@ a:hover {
     gap: 16px;
 }
 
-/* Mini Stats Bar */
+/* Mini Stats Cards */
 .mini-stats {
     display: flex;
-    align-items: center;
-    gap: 16px;
+    gap: 12px;
     margin-bottom: 20px;
-    font-size: 0.875rem;
-    color: var(--text-secondary);
 }
 
-.mini-stat strong {
+.mini-stat-card {
+    background: var(--bg-card);
+    border-radius: var(--radius);
+    padding: 16px 24px;
+    box-shadow: var(--shadow-sm);
+    text-align: center;
+    min-width: 100px;
+}
+
+.mini-stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
     color: var(--text-primary);
-    font-weight: 600;
+    line-height: 1.2;
 }
 
-.mini-stat-divider {
-    width: 4px;
-    height: 4px;
-    background: var(--border);
-    border-radius: 50%;
+.mini-stat-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-top: 4px;
 }
 
 /* Buttons */

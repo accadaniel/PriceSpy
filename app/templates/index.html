@@ -3,19 +3,20 @@
 {% block title %}Dashboard - PriceSpy{% endblock %}
 
 {% block content %}
-<!-- Mini Stats Bar -->
+<!-- Mini Stats -->
 <div class="mini-stats">
-    <span class="mini-stat">
-        <strong>{{ products|length }}</strong> products
-    </span>
-    <span class="mini-stat-divider"></span>
-    <span class="mini-stat">
-        <strong>{{ products|selectattr('is_active')|list|length }}</strong> active
-    </span>
-    <span class="mini-stat-divider"></span>
-    <span class="mini-stat">
-        Next check in <strong>6h</strong>
-    </span>
+    <div class="mini-stat-card">
+        <div class="mini-stat-value">{{ products|length }}</div>
+        <div class="mini-stat-label">products</div>
+    </div>
+    <div class="mini-stat-card">
+        <div class="mini-stat-value">{{ products|selectattr('is_active')|list|length }}</div>
+        <div class="mini-stat-label">active</div>
+    </div>
+    <div class="mini-stat-card">
+        <div class="mini-stat-value">6h</div>
+        <div class="mini-stat-label">next check</div>
+    </div>
 </div>
 
 <!-- Products Card -->
