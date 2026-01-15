@@ -15,7 +15,8 @@ async def lifespan(app: FastAPI):
     # Startup: Initialize database
     await database.init_db()
     yield
-    # Shutdown: nothing to clean up
+    # Shutdown: Close database connection pool
+    await database.close_db()
 
 
 app = FastAPI(

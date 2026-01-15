@@ -22,97 +22,102 @@ async def run_scraper():
     print("PriceSpy Scraper - Starting")
     print("=" * 50)
 
-    # Initialize database
+    # Initialize database connection pool
     await database.init_db()
 
-    # Get all active products
-    products = await database.get_all_products(active_only=True)
-    print(f"Found {len(products)} active products to scrape")
+    try:
+        # Get all active products
+        products = await database.get_all_products(active_only=True)
+        print(f"Found {len(products)} active products to scrape")
 
-    if not products:
-        print("No active products to scrape. Exiting.")
-        return
+        if not products:
+            print("No active products to scrape. Exiting.")
+            return
 
-    settings = get_settings()
-    if not settings.serpapi_key:
-        print("ERROR: SERPAPI_KEY not configured. Exiting.")
-        return
+        settings = get_settings()
+        if not settings.serpapi_key:
+            print("ERROR: SERPAPI_KEY not configured. Exiting.")
+            return
 
-    total_prices = 0
-    total_alerts = 0
-    errors = 0
+        total_prices = 0
+        total_alerts = 0
+        errors = 0
 
-    for product in products:
-        print(f"\n--- Scraping: {product['name']} ---")
-        print(f"    Query: {product['search_query']}")
-        print(f"    Region: {product.get('region', 'eu')}")
-        print(f"    Category: {product.get('category', 'electronics')}")
+        for product in products:
+            print(f"\n--- Scraping: {product['name']} ---")
+            print(f"    Query: {product['search_query']}")
+            print(f"    Region: {product.get('region', 'eu')}")
+            print(f"    Category: {product.get('category', 'electronics')}")
 
-        try:
-            # Scrape prices with all product attributes
-            prices = await scrape_product_prices(
-                product_id=product["id"],
-                search_query=product["search_query"],
-                region=product.get("region", "eu"),
-                size=product.get("size"),
-                color=product.get("color"),
-                brand=product.get("brand"),
-                model=product.get("model"),
-                storage=product.get("storage"),
-                material=product.get("material"),
-            )
-
-            if not prices:
-                print(f"    No prices found")
-                continue
-
-            print(f"    Found {len(prices)} prices")
-
-            # Store prices in database
-            for price_data in prices:
-                await database.add_price_record(
+            try:
+                # Scrape prices with all product attributes
+                prices = await scrape_product_prices(
                     product_id=product["id"],
-                    retailer=price_data["retailer"],
-                    price=price_data["price"],
-                    url=price_data["url"],
-                    currency=price_data.get("currency", "EUR"),
+                    search_query=product["search_query"],
+                    region=product.get("region", "eu"),
+                    size=product.get("size"),
+                    color=product.get("color"),
+                    brand=product.get("brand"),
+                    model=product.get("model"),
+                    storage=product.get("storage"),
+                    material=product.get("material"),
                 )
 
-            total_prices += len(prices)
+                if not prices:
+                    print(f"    No prices found")
+                    continue
 
-            # Find lowest price and check for alerts
-            lowest = min(prices, key=lambda x: x["price"])
-            currency = product.get("currency", "EUR")
-            print(f"    Lowest: {currency} {lowest['price']:.2f} at {lowest['retailer']}")
-            print(f"    Target: {currency} {product['target_price']:.2f}")
+                print(f"    Found {len(prices)} prices")
 
-            if lowest["price"] < product["target_price"]:
-                print(f"    Price is below target! Checking for alert...")
+                # Store prices in database
+                for price_data in prices:
+                    await database.add_price_record(
+                        product_id=product["id"],
+                        retailer=price_data["retailer"],
+                        price=price_data["price"],
+                        url=price_data["url"],
+                        currency=price_data.get("currency", "EUR"),
+                    )
 
-                alert_sent = await check_and_send_alert(
-                    product=product,
-                    lowest_price=lowest["price"],
-                    retailer=lowest["retailer"],
-                    url=lowest["url"],
-                )
+                total_prices += len(prices)
 
-                if alert_sent:
-                    print(f"    Alert sent to {product['user_email']}")
-                    total_alerts += 1
-                else:
-                    print(f"    Alert skipped (already sent recently)")
+                # Find lowest price and check for alerts
+                lowest = min(prices, key=lambda x: x["price"])
+                currency = product.get("currency", "EUR")
+                print(f"    Lowest: {currency} {lowest['price']:.2f} at {lowest['retailer']}")
+                print(f"    Target: {currency} {product['target_price']:.2f}")
 
-        except Exception as e:
-            print(f"    ERROR: {str(e)}")
-            errors += 1
+                if lowest["price"] < product["target_price"]:
+                    print(f"    Price is below target! Checking for alert...")
 
-    print("\n" + "=" * 50)
-    print("PriceSpy Scraper - Complete")
-    print(f"  Products processed: {len(products)}")
-    print(f"  Total prices found: {total_prices}")
-    print(f"  Alerts sent: {total_alerts}")
-    print(f"  Errors: {errors}")
-    print("=" * 50)
+                    alert_sent = await check_and_send_alert(
+                        product=product,
+                        lowest_price=lowest["price"],
+                        retailer=lowest["retailer"],
+                        url=lowest["url"],
+                    )
+
+                    if alert_sent:
+                        print(f"    Alert sent to {product['user_email']}")
+                        total_alerts += 1
+                    else:
+                        print(f"    Alert skipped (already sent recently)")
+
+            except Exception as e:
+                print(f"    ERROR: {str(e)}")
+                errors += 1
+
+        print("\n" + "=" * 50)
+        print("PriceSpy Scraper - Complete")
+        print(f"  Products processed: {len(products)}")
+        print(f"  Total prices found: {total_prices}")
+        print(f"  Alerts sent: {total_alerts}")
+        print(f"  Errors: {errors}")
+        print("=" * 50)
+
+    finally:
+        # Close database connection pool
+        await database.close_db()
 
 
 if __name__ == "__main__":

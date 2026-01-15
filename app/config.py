@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     serpapi_key: str = ""
     resend_api_key: str = ""
     from_email: str = "onboarding@resend.dev"
-    database_path: str = "./data/pricespy.db"
+    database_url: str = ""  # Supabase PostgreSQL connection string
 
     class Config:
         env_file = ".env"
