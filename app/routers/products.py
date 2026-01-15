@@ -4,6 +4,7 @@ from typing import Optional
 from pydantic import BaseModel
 import httpx
 import re
+import json
 from .. import database
 from ..models import ProductCreate, ProductUpdate
 
@@ -146,135 +147,298 @@ async def scrape_product_url(request: UrlScrapeRequest):
     return data
 
 
+def extract_json_ld(html: str) -> list[dict]:
+    """Extract all JSON-LD structured data from HTML."""
+    json_ld_data = []
+    pattern = r'<script[^>]*type=["\']application/ld\+json["\'][^>]*>(.*?)</script>'
+    matches = re.findall(pattern, html, re.DOTALL | re.IGNORECASE)
+
+    for match in matches:
+        try:
+            data = json.loads(match.strip())
+            if isinstance(data, list):
+                json_ld_data.extend(data)
+            else:
+                json_ld_data.append(data)
+        except json.JSONDecodeError:
+            continue
+
+    return json_ld_data
+
+
+def extract_meta_tags(html: str) -> dict:
+    """Extract Open Graph and other meta tags."""
+    meta = {}
+
+    # Open Graph tags (property attribute)
+    og_patterns = [
+        (r'<meta\s+property=["\']og:title["\']\s+content=["\']([^"\']+)["\']', 'og_title'),
+        (r'<meta\s+content=["\']([^"\']+)["\']\s+property=["\']og:title["\']', 'og_title'),
+        (r'<meta\s+property=["\']og:description["\']\s+content=["\']([^"\']+)["\']', 'og_description'),
+        (r'<meta\s+content=["\']([^"\']+)["\']\s+property=["\']og:description["\']', 'og_description'),
+        (r'<meta\s+property=["\']product:price:amount["\']\s+content=["\']([^"\']+)["\']', 'price'),
+        (r'<meta\s+content=["\']([^"\']+)["\']\s+property=["\']product:price:amount["\']', 'price'),
+        (r'<meta\s+property=["\']product:price:currency["\']\s+content=["\']([^"\']+)["\']', 'currency'),
+        (r'<meta\s+property=["\']product:brand["\']\s+content=["\']([^"\']+)["\']', 'brand'),
+        (r'<meta\s+content=["\']([^"\']+)["\']\s+property=["\']product:brand["\']', 'brand'),
+        (r'<meta\s+property=["\']product:color["\']\s+content=["\']([^"\']+)["\']', 'color'),
+        (r'<meta\s+content=["\']([^"\']+)["\']\s+property=["\']product:color["\']', 'color'),
+    ]
+
+    for pattern, key in og_patterns:
+        if key not in meta:
+            match = re.search(pattern, html, re.IGNORECASE)
+            if match:
+                meta[key] = match.group(1).strip()
+
+    # Twitter cards
+    twitter_patterns = [
+        (r'<meta\s+name=["\']twitter:title["\']\s+content=["\']([^"\']+)["\']', 'twitter_title'),
+        (r'<meta\s+content=["\']([^"\']+)["\']\s+name=["\']twitter:title["\']', 'twitter_title'),
+    ]
+
+    for pattern, key in twitter_patterns:
+        if key not in meta:
+            match = re.search(pattern, html, re.IGNORECASE)
+            if match:
+                meta[key] = match.group(1).strip()
+
+    # Regular title
+    title_match = re.search(r'<title>([^<]+)</title>', html, re.IGNORECASE)
+    if title_match:
+        meta['title'] = title_match.group(1).strip()
+
+    return meta
+
+
+def find_product_in_json_ld(json_ld_list: list[dict]) -> dict | None:
+    """Find Product schema in JSON-LD data."""
+    for item in json_ld_list:
+        if isinstance(item, dict):
+            item_type = item.get('@type', '')
+            if isinstance(item_type, list):
+                item_type = item_type[0] if item_type else ''
+
+            if item_type in ['Product', 'IndividualProduct', 'ProductModel']:
+                return item
+
+            # Check @graph array
+            if '@graph' in item:
+                for graph_item in item['@graph']:
+                    if isinstance(graph_item, dict):
+                        graph_type = graph_item.get('@type', '')
+                        if isinstance(graph_type, list):
+                            graph_type = graph_type[0] if graph_type else ''
+                        if graph_type in ['Product', 'IndividualProduct', 'ProductModel']:
+                            return graph_item
+    return None
+
+
+def clean_product_name(name: str) -> str:
+    """Clean up product name by removing store suffixes."""
+    if not name:
+        return name
+    # Remove common store suffixes
+    name = re.sub(r'\s*[-|–—:]\s*(Amazon|eBay|Best Buy|Walmart|Target|Official|Shop|Store|Buy).*$', '', name, flags=re.IGNORECASE)
+    name = re.sub(r'\s*\|\s*.*$', '', name)  # Remove everything after |
+    name = name.strip()
+    return name
+
+
 def extract_product_data(html: str, category: str) -> ScrapedProductData:
-    """Extract product information from HTML content."""
+    """Extract product information from HTML content using multiple strategies."""
     data = ScrapedProductData()
 
-    # Try to extract product name from various meta tags and elements
-    name_patterns = [
-        r'<meta\s+property=["\']og:title["\']\s+content=["\']([^"\']+)["\']',
-        r'<meta\s+name=["\']twitter:title["\']\s+content=["\']([^"\']+)["\']',
-        r'<title>([^<]+)</title>',
-        r'<h1[^>]*class=["\'][^"\']*product[^"\']*["\'][^>]*>([^<]+)</h1>',
-        r'<h1[^>]*>([^<]+)</h1>',
-        r'"name"\s*:\s*"([^"]+)"',
-    ]
+    # Check if page seems to be a queue/waiting page
+    queue_indicators = ['we should be up and moving shortly', 'please wait', 'queue', 'high traffic', 'checking your browser']
+    html_lower = html.lower()
+    if any(indicator in html_lower for indicator in queue_indicators):
+        # Page is likely blocked/queued, return empty data
+        return data
 
-    for pattern in name_patterns:
-        match = re.search(pattern, html, re.IGNORECASE)
-        if match:
-            name = match.group(1).strip()
-            # Clean up common suffixes
-            name = re.sub(r'\s*[-|]\s*(Amazon|eBay|Best Buy|Walmart|Target|Official).*$', '', name, flags=re.IGNORECASE)
-            name = re.sub(r'\s*:\s*(Amazon|eBay).*$', '', name, flags=re.IGNORECASE)
-            if len(name) > 5 and len(name) < 200:
-                data.name = name
-                break
+    # Strategy 1: JSON-LD structured data (most reliable)
+    json_ld_list = extract_json_ld(html)
+    product_ld = find_product_in_json_ld(json_ld_list)
 
-    # Extract brand from meta tags or structured data
-    brand_patterns = [
-        r'"brand"\s*:\s*\{[^}]*"name"\s*:\s*"([^"]+)"',
-        r'"brand"\s*:\s*"([^"]+)"',
-        r'<meta\s+property=["\']product:brand["\']\s+content=["\']([^"\']+)["\']',
-        r'<span[^>]*class=["\'][^"\']*brand[^"\']*["\'][^>]*>([^<]+)</span>',
-    ]
+    if product_ld:
+        # Extract name
+        if 'name' in product_ld:
+            data.name = clean_product_name(product_ld['name'])
 
-    for pattern in brand_patterns:
-        match = re.search(pattern, html, re.IGNORECASE)
-        if match:
-            brand = match.group(1).strip()
-            if len(brand) > 1 and len(brand) < 50:
-                data.brand = brand
-                break
+        # Extract brand
+        brand = product_ld.get('brand')
+        if isinstance(brand, dict):
+            data.brand = brand.get('name', '')
+        elif isinstance(brand, str):
+            data.brand = brand
 
-    # Extract price
-    price_patterns = [
-        r'"price"\s*:\s*"?(\d+\.?\d*)"?',
-        r'<meta\s+property=["\']product:price:amount["\']\s+content=["\']([^"\']+)["\']',
-        r'<span[^>]*class=["\'][^"\']*price[^"\']*["\'][^>]*>\s*[\$€£]?\s*(\d+[,.]?\d*)',
-    ]
+        # Extract price from offers
+        offers = product_ld.get('offers', {})
+        if isinstance(offers, list):
+            offers = offers[0] if offers else {}
+        if isinstance(offers, dict):
+            price = offers.get('price') or offers.get('lowPrice')
+            if price:
+                try:
+                    data.price = float(str(price).replace(',', '.'))
+                except ValueError:
+                    pass
 
-    for pattern in price_patterns:
-        match = re.search(pattern, html, re.IGNORECASE)
-        if match:
+        # Extract color
+        if 'color' in product_ld:
+            data.color = product_ld['color']
+
+        # Extract model/SKU
+        if 'model' in product_ld:
+            data.model = product_ld['model']
+        elif 'sku' in product_ld:
+            data.model = product_ld['sku']
+        elif 'mpn' in product_ld:
+            data.model = product_ld['mpn']
+
+        # Extract material
+        if 'material' in product_ld:
+            mat = product_ld['material']
+            if isinstance(mat, list):
+                data.material = ', '.join(mat)
+            else:
+                data.material = mat
+
+        # Extract size
+        if 'size' in product_ld:
+            data.size = product_ld['size']
+
+        # Extract description for additional info
+        description = product_ld.get('description', '')
+
+        # Try to get color from description if not found
+        if not data.color and description:
+            color_match = re.search(r'\b(Black|White|Red|Blue|Green|Navy|Grey|Gray|Brown|Beige|Pink|Orange|Yellow|Purple|Gold|Silver)\b', description, re.IGNORECASE)
+            if color_match:
+                data.color = color_match.group(1).title()
+
+    # Strategy 2: Meta tags (fallback for missing fields)
+    meta = extract_meta_tags(html)
+
+    if not data.name:
+        data.name = clean_product_name(meta.get('og_title') or meta.get('twitter_title') or meta.get('title', ''))
+
+    if not data.brand:
+        data.brand = meta.get('brand')
+
+    if not data.color:
+        data.color = meta.get('color')
+
+    if not data.price:
+        price_str = meta.get('price')
+        if price_str:
             try:
-                price_str = match.group(1).replace(',', '.')
-                data.price = float(price_str)
-                break
+                data.price = float(price_str.replace(',', '.'))
             except ValueError:
-                continue
+                pass
+
+    # Strategy 3: Regex patterns for common structures (last resort)
+    if not data.brand:
+        brand_patterns = [
+            r'"brand"\s*:\s*\{[^}]*"name"\s*:\s*"([^"]+)"',
+            r'"brand"\s*:\s*"([^"]+)"',
+            r'itemprop=["\']brand["\']\s+content=["\']([^"\']+)["\']',
+            r'data-brand=["\']([^"\']+)["\']',
+        ]
+        for pattern in brand_patterns:
+            match = re.search(pattern, html, re.IGNORECASE)
+            if match:
+                brand = match.group(1).strip()
+                if len(brand) > 1 and len(brand) < 50:
+                    data.brand = brand
+                    break
+
+    if not data.price:
+        price_patterns = [
+            r'"price"\s*:\s*"?(\d+\.?\d*)"?',
+            r'data-price=["\'](\d+\.?\d*)["\']',
+            r'class=["\'][^"\']*price[^"\']*["\'][^>]*>[\s\S]*?[\$€£]?\s*(\d+[,.]?\d*)',
+        ]
+        for pattern in price_patterns:
+            match = re.search(pattern, html, re.IGNORECASE)
+            if match:
+                try:
+                    price_str = match.group(1).replace(',', '.')
+                    price = float(price_str)
+                    if 0.01 < price < 100000:  # Sanity check
+                        data.price = price
+                        break
+                except ValueError:
+                    continue
 
     # Category-specific extractions
     if category == "electronics":
-        # Extract storage (e.g., 128GB, 256GB, 1TB)
-        storage_match = re.search(r'\b(\d+\s*(?:GB|TB|MB))\b', html, re.IGNORECASE)
-        if storage_match:
-            data.storage = storage_match.group(1).upper().replace(' ', '')
+        if not data.storage:
+            storage_match = re.search(r'\b(\d+)\s*(GB|TB)\b', html, re.IGNORECASE)
+            if storage_match:
+                data.storage = f"{storage_match.group(1)}{storage_match.group(2).upper()}"
 
-        # Extract model number
-        model_patterns = [
-            r'"model"\s*:\s*"([^"]+)"',
-            r'"mpn"\s*:\s*"([^"]+)"',
-            r'Model[:\s#]+([A-Z0-9][-A-Z0-9]+)',
-        ]
-        for pattern in model_patterns:
-            match = re.search(pattern, html, re.IGNORECASE)
-            if match:
-                data.model = match.group(1).strip()
-                break
+        if not data.model:
+            model_patterns = [
+                r'"model"\s*:\s*"([^"]+)"',
+                r'"mpn"\s*:\s*"([^"]+)"',
+                r'"sku"\s*:\s*"([^"]+)"',
+                r'Model[\s:#]+([A-Z0-9][-A-Z0-9/]+)',
+            ]
+            for pattern in model_patterns:
+                match = re.search(pattern, html, re.IGNORECASE)
+                if match:
+                    model = match.group(1).strip()
+                    if len(model) > 2 and len(model) < 50:
+                        data.model = model
+                        break
 
     elif category == "clothes":
-        # Extract size
-        size_patterns = [
-            r'"size"\s*:\s*"([^"]+)"',
-            r'Size[:\s]+([XSML]{1,3}|\d{1,2})',
-        ]
-        for pattern in size_patterns:
-            match = re.search(pattern, html, re.IGNORECASE)
-            if match:
-                data.size = match.group(1).strip()
-                break
+        if not data.material:
+            material_patterns = [
+                r'"material"\s*:\s*"([^"]+)"',
+                r'(\d+%\s*(?:Cotton|Polyester|Wool|Silk|Linen|Nylon|Spandex|Elastane|Viscose|Rayon)[^<\n]*)',
+                r'Material[:\s]+([A-Za-z0-9%\s,]+?)(?:\.|<|$)',
+            ]
+            for pattern in material_patterns:
+                match = re.search(pattern, html, re.IGNORECASE)
+                if match:
+                    material = match.group(1).strip()
+                    if len(material) > 3 and len(material) < 150:
+                        data.material = material
+                        break
 
-        # Extract material
-        material_patterns = [
-            r'"material"\s*:\s*"([^"]+)"',
-            r'Material[:\s]+([A-Za-z\s,]+?)(?:\.|<|$)',
-            r'\b(\d+%\s*(?:Cotton|Polyester|Wool|Silk|Linen|Nylon)[^<]*)\b',
+    # Extract color if still missing (common patterns)
+    if not data.color:
+        color_patterns = [
+            r'"color"\s*:\s*"([^"]+)"',
+            r'data-color=["\']([^"\']+)["\']',
+            r'[Cc]olou?r[:\s]+([A-Za-z\s]+?)(?:\s*[,.<]|$)',
         ]
-        for pattern in material_patterns:
-            match = re.search(pattern, html, re.IGNORECASE)
+        for pattern in color_patterns:
+            match = re.search(pattern, html)
             if match:
-                material = match.group(1).strip()
-                if len(material) < 100:
-                    data.material = material
+                color = match.group(1).strip()
+                if len(color) > 2 and len(color) < 40 and not re.search(r'\d', color):
+                    data.color = color
                     break
-
-    # Extract color (common for both categories)
-    color_patterns = [
-        r'"color"\s*:\s*"([^"]+)"',
-        r'Color[:\s]+([A-Za-z\s]+?)(?:\.|<|,|$)',
-        r'<meta\s+property=["\']product:color["\']\s+content=["\']([^"\']+)["\']',
-    ]
-    for pattern in color_patterns:
-        match = re.search(pattern, html, re.IGNORECASE)
-        if match:
-            color = match.group(1).strip()
-            if len(color) > 2 and len(color) < 30:
-                data.color = color
-                break
 
     # Generate search query from extracted data
     search_parts = []
     if data.brand:
         search_parts.append(data.brand)
     if data.name:
-        # Use name but remove brand if already included
         name_for_search = data.name
+        # Remove brand from name if already included
         if data.brand and data.brand.lower() in name_for_search.lower():
             name_for_search = re.sub(re.escape(data.brand), '', name_for_search, flags=re.IGNORECASE).strip()
-        search_parts.append(name_for_search)
-    if data.model:
+        name_for_search = re.sub(r'\s+', ' ', name_for_search).strip()
+        if name_for_search:
+            search_parts.append(name_for_search)
+    if data.model and data.model not in ' '.join(search_parts):
         search_parts.append(data.model)
+    if data.color and data.color.lower() not in ' '.join(search_parts).lower():
+        search_parts.append(data.color)
 
     if search_parts:
         data.search_query = ' '.join(search_parts)
