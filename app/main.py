@@ -8,6 +8,7 @@ from typing import Optional
 
 from . import database
 from .routers import products, prices
+from .services.scraper import scrape_product_prices
 
 
 @asynccontextmanager
@@ -143,6 +144,43 @@ async def toggle_product_web(product_id: int):
     if product:
         await database.update_product(product_id, is_active=not product["is_active"])
     return RedirectResponse(url="/", status_code=303)
+
+
+@app.post("/product/{product_id}/scrape")
+async def scrape_product_web(product_id: int):
+    """Manually trigger price scraping for a product."""
+    product = await database.get_product(product_id)
+    if not product:
+        return RedirectResponse(url="/", status_code=303)
+
+    try:
+        # Scrape prices using SerpAPI
+        price_results = await scrape_product_prices(
+            product_id=product_id,
+            search_query=product["search_query"],
+            region=product.get("region", "eu"),
+            size=product.get("size"),
+            color=product.get("color"),
+            brand=product.get("brand"),
+            model=product.get("model"),
+            storage=product.get("storage"),
+            material=product.get("material"),
+        )
+
+        # Save prices to database
+        for price_data in price_results:
+            await database.add_price(
+                product_id=product_id,
+                retailer=price_data["retailer"],
+                price=price_data["price"],
+                currency=price_data["currency"],
+                url=price_data.get("url", ""),
+            )
+    except Exception as e:
+        # Log error but still redirect
+        print(f"Error scraping product {product_id}: {e}")
+
+    return RedirectResponse(url=f"/product/{product_id}", status_code=303)
 
 
 @app.get("/health")
